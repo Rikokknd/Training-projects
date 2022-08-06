@@ -22,7 +22,7 @@ if __name__ == "__main__":
         round_counter += 1
         player_choice = input(f"Round {round_counter}. Choose your weapon! : ").upper()
 
-        while player_choice != "R" and player_choice != "P" and player_choice != "S":
+        while player_choice not in ["R", "P", "S"]:
             player_choice = input("Please respond with R, P or S : ").upper()
         
         game_choice = random.choice(["R", "P", "S"])
@@ -43,7 +43,6 @@ if __name__ == "__main__":
             game_score += 1
             print("You lost!")
         print("\n")
-        # print(f"Score: You: {str(player_score)}, Me: {str(game_score)}. Rounds: {str(round_counter)}\n")
 
     print(f"\nGame over! {'You won!' if player_score > game_score else 'You lost!'}")
     print(f"Score: You: {str(player_score)}, Me: {str(game_score)}. Rounds: {str(round_counter)}\n")

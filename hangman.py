@@ -3,7 +3,7 @@ import string
 
 list_of_words = ["abruptly", "absurd", "abyss", "affix", "askew", "avenue", "awkward", "axiom", "azure", "bagpipes", "bandwagon", "banjo", "bayou", "beekeeper", "bikini", "blitz", "blizzard", "boggle", "bookworm", "boxcar", "boxful", "buckaroo", "buffalo", "buffoon", "buxom", "buzzard", "buzzing", "buzzwords", "caliph", "cobweb", "cockiness", "croquet", "crypt", "curacao", "cycle", "daiquiri", "dirndl", "disavow", "dizzying", "duplex", "dwarves", "embezzle", "equip", "espionage", "euouae", "exodus", "faking", "fishhook", "fixable", "fjord", "flapjack", "flopping", "fluffiness", "flyby", "foxglove", "frazzled", "frizzled", "fuchsia", "funny", "gabby", "galaxy", "galvanize", "gazebo", "giaour", "gizmo", "glowworm", "glyph", "gnarly", "gnostic", "gossip", "grogginess", "haiku", "haphazard", "hyphen", "iatrogenic", "icebox", "injury", "ivory", "ivy", "jackpot", "jaundice", "jawbreaker", "jaywalk", "jazziest", "jazzy", "jelly", "jigsaw", "jinx", "jiujitsu", "jockey", "jogging", "joking", "jovial", "joyful", "juicy", "jukebox", "jumbo", "kayak", "kazoo", "keyhole", "khaki", "kilobyte", "kiosk", "kitsch", "kiwifruit", "klutz", "knapsack", "larynx", "lengths", "lucky", "luxury", "lymph", "marquis", "matrix", "megahertz", "microwave", "mnemonic", "mystify", "naphtha", "nightclub", "nowadays", "numbskull", "nymph", "onyx", "ovary", "oxidize", "oxygen", "pajama", "peekaboo", "phlegm", "pixel", "pizazz", "pneumonia", "polka", "pshaw", "psyche", "puppy", "puzzling", "quartz", "queue", "quips", "quixotic", "quiz", "quizzes", "quorum", "razzmatazz", "rhubarb", "rhythm", "rickshaw", "schnapps", "scratch", "shiv", "snazzy", "sphinx", "spritz", "squawk", "staff", "strength", "strengths", "stretch", "stronghold", "stymied", "subway", "swivel", "syndrome", "thriftless", "thumbscrew", "topaz", "transcript", "transgress", "transplant", "triphthong", "twelfth", "twelfths", "unknown", "unworthy", "unzip", "uptown", "vaporize", "vixen", "vodka", "voodoo", "vortex", "voyeurism", "walkway", "waltz", "wave", "wavy", "waxy", "wellspring", "wheezy", "whiskey", "whizzing", "whomever", "wimpy", "witchcraft", "wizard", "woozy", "wristwatch", "wyvern", "xylophone", "yachtsman", "yippee", "yoked", "youthful", "yummy", "zephyr", "zigzag", "zigzagging", "zilch", "zipper", "zodiac", "zombie"]
 
-def printer(_word, _letters):
+def blurred_printer(_word, _letters):
     blurred_word = "".join(["*" if x in _letters else x for x in _word])
     return blurred_word
 
@@ -25,8 +25,11 @@ def game():
         if len(letters) == 0:
             print(f"\nYou won! {word} was the word!")
             break
-        print(printer(word, letters))
+
+        print(blurred_printer(word, letters))
+        
         user_input = input("\nChoose a letter : ").upper()
+        
         if user_input not in possible_letters or len(user_input) != 1:
             print("Please type in a single letter.")
             continue
@@ -36,17 +39,18 @@ def game():
         elif user_input not in letters:
             max_mistakes -= 1
             used_letters.add(user_input)
-            print(f"You missed! You have {max_mistakes} possible mistakes left.")
+            if max_mistakes > 0:
+                print(f"You missed! You have {max_mistakes} possible mistake{'s' if max_mistakes > 1 else ''} left.")
             continue
         elif user_input in letters:
             print(f"Correct!")
             used_letters.add(user_input)
             letters.remove(user_input)
 
-    if input("Would you like to play again? Y to restart: ").upper() == "Y":
-        game()
+    if input("Would you like to play again? N to exit: ").upper() == "N":
+        exit("\nGoodbye!\n")
     else:
-        print("Goodbye!")
+        game()
     
 if __name__ == "__main__":
     game()

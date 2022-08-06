@@ -1,45 +1,41 @@
 import random
 import numpy
 
-"""
-из чего состоит игра
-1. игровое поле 3 на 3
-2. 2 игрока
-3. игроки ходят по очереди, ставят в пустые клетки свою метку
-   После каждого хода нужно отрисовывать состояние поля
-4. игра заканчивается победой, когда на любой горизонтали, вертикали или диагонали образуется 3 метки от одного игрока
-5. игра заканчивается ничьей, когда поле заполняется до конца
-
-1. нужно сгенерировать поле - numpy массив 3 на 3?
-2. добавить 2 игроков, которые ходит по очереди
-3. после каждого хода нужно проверять поле на условия победы/ничьей
-"""
-
 
 class Player:
-    """Класс игрока. Может контролироваться как человеком, так и компьютером.
-    Должен получать состояние доски, и ставить свою метку в пустые клетки.
-    Не может изменять уже заполненные клетки. 
-    """
-
     def __init__(self, mark: str) -> None:
         self.human = None
+        self.random = None
+        self.master = None
         self.mark = mark
+        self.opponent = "X" if self.mark == "O" else "O"
         self.choose_controller()
 
     def return_mark(self):
         return self.mark
 
     def choose_controller(self):
-        response = input("Please decide who controlls this player - (H)uman or (C)omputer : ").upper()
-        while response != "H" and response != "C":
-            response = input("Please respond with H or C : ").upper()
+        response = input("Please decide who controlls this player - (H)uman, (C)omputer or (M)aster : ").upper()
+        while response not in ["H", "C", "M"]:
+            response = input("Please respond with H, C or M : ").upper()
         if response == "H":
             self.human = True
+        elif response == "C":
+            self.random = True
+        elif response == "M":
+            self.master = True
         else:
-            self.human = False
+            exit("Something went wrong...")
 
     def make_turn(self, board: numpy.ndarray):
+        if self.human:
+            return self.make_human_turn(board)
+        elif self.random:
+            return self.make_random_turn(board)
+        elif self.master:
+            return self.make_master_turn(board)
+
+    def make_human_turn(self, board: numpy.ndarray):
         def get_digit():
             choice = input("Please choose a cell to mark [1-9] : ")
             while not choice.isdigit() or int(choice) < 1 or int(choice) > 9:
@@ -47,8 +43,6 @@ class Player:
             return int(choice)
         
         flat_board = board.ravel()
-        if self.human == False:
-            return self.make_turn_ai(flat_board)
         while True:
             c = get_digit() - 1
             if flat_board[c] == 0:
@@ -56,14 +50,46 @@ class Player:
             else:
                 print("This cell is unavailable.")
 
-    def make_turn_ai(self, board):
+    def make_random_turn(self, board: numpy.ndarray):
+        board = board.ravel()
         possible_cells = []
         for pos, mark in enumerate(board):
             if mark == 0:
                 possible_cells.append(pos)
         choice = random.choice(possible_cells)
-        print(f"Computer marks a cell.")
+        print(f"Computer '{self.mark}' marks a cell.")
         return (choice, self.return_mark())
+
+    def make_master_turn(self, board: numpy.ndarray):
+
+        def minmaxer(_board: numpy.ndarray, my_turn=True):
+            """Определяет, какая из доступных клеток самая выгодная. Должен вернуть оценку этой клетки и ее номер."""
+            possible_cells = []
+            for pos, fill in enumerate(_board.ravel().tolist()):
+                if fill == 0:
+                    possible_cells.append([0, pos + 1]) # 0 - score, pos - cell position
+
+            for cell in range(len(possible_cells)):
+                new_board = _board.copy()
+                new_board[(possible_cells[cell][1] - 1) // 3, (possible_cells[cell][1] - 1) % 3] = self.mark if my_turn == True else self.opponent
+                result = Game.check_board(new_board)
+                if result != 0 and result is not None:
+                    score = len(possible_cells) * (-1 if my_turn == False else 1)
+                    possible_cells[cell][0] = score
+                elif result == 0:
+                    possible_cells[cell][0] = 0
+                else:
+                    possible_cells[cell][0] = minmaxer(new_board, my_turn=(False if my_turn == True else True))[0]
+
+            best_cells = []
+            for cell in possible_cells:
+                if cell[0] == max(possible_cells)[0]:
+                    best_cells.append(cell)
+            best_option = random.choice(best_cells)
+
+            return best_option
+
+        return (minmaxer(board)[1], self.return_mark())
 
 
 class Game:
@@ -91,19 +117,14 @@ class Game:
         print(f"---|---|---")
         print(f" {' ' if self.board[2, 0] == 0 else self.board[2, 0]} | {' ' if self.board[2, 1] == 0 else self.board[2, 1]} | {' ' if self.board[2, 2] == 0 else self.board[2, 2]} ")
         
-    def check_board(self):
-        rows_cols_diags = self.board.tolist() + self.board.transpose().tolist() + [self.board.diagonal().tolist()] + [numpy.fliplr(self.board).diagonal().tolist()]
-        mark1 = self.player1.return_mark()
-        mark2 = self.player2.return_mark()
+    def check_board(board):
+        rows_cols_diags = board.tolist() + board.transpose().tolist() + [board.diagonal().tolist()] + [numpy.fliplr(board).diagonal().tolist()]
 
         for line in rows_cols_diags:
             if len(set(line)) == 1 and set(line).pop() != 0:
-                if set(line).pop() == mark1:
-                    return 1
-                elif set(line).pop() == mark2:
-                    return 2
+                return set(line).pop()
         
-        if 0 not in self.board.ravel().tolist():
+        if 0 not in board.ravel().tolist():
             return 0
 
         return None
@@ -119,8 +140,8 @@ class Game:
                 self.board[cell // 3, cell % 3] = mark
                 player_one_move = False
 
-            if self.check_board() is not None:
-                return self.game_end(self.check_board())
+            if Game.check_board(self.board) is not None:
+                return self.game_end(Game.check_board(self.board))
 
             while player_one_move is False:
                 self.draw_board()
@@ -129,18 +150,18 @@ class Game:
                 self.board[cell // 3, cell % 3] = mark
                 player_one_move = True
 
-            if self.check_board() is not None:
-                return self.game_end(self.check_board())
+            if Game.check_board(self.board) is not None:
+                return self.game_end(Game.check_board(self.board))
 
     def game_end(self, result):
         self.draw_board()
 
         if result == 0:
             print("It's a tie!")
-        elif result == 1:
+        elif result == self.player1.return_mark():
             print("Player 1 wins!")
             self.player1_score += 1
-        elif result == 2:
+        elif result == self.player2.return_mark():
             print("Player 2 wins!")
             self.player2_score += 1
         else:

@@ -13,7 +13,7 @@ def game():
         count += 1
         print(f"My guess is {guess}!")
         response = input("Tell me if I was correct(C), guessed too high(H) or too low(L)! : ").upper()
-        while response != "C" and response != "L" and response != "H":
+        while response not in ["C", "H", "L"]:
             response = input("Please respond with C, H or L : ").upper()
         if response == "C" or lowest == highest:
             print(f"Excellent! It took me {count} tries to guess your number, {guess}!")
@@ -25,7 +25,7 @@ def game():
             lowest = guess + 1
     print("\n")
     if input("Would you like to play again? Y if you do : ").upper() != "Y":
-        print("Goodbye!")
+        exit("Goodbye!")
     else:
         print("\n\n")
         game()
