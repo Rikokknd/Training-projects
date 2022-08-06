@@ -1,5 +1,4 @@
-import string
-from typing import Tuple
+import random
 import numpy
 
 """
@@ -28,6 +27,9 @@ class Player:
         self.mark = mark
         self.choose_controller()
 
+    def return_mark(self):
+        return self.mark
+
     def choose_controller(self):
         response = input("Please decide who controlls this player - (H)uman or (C)omputer : ").upper()
         while response != "H" and response != "C":
@@ -35,10 +37,9 @@ class Player:
         if response == "H":
             self.human = True
         else:
-            print(f"Sorry, AI is not supported right now.")
-            exit()
+            self.human = False
 
-    def make_turn(self, board: numpy.ndarray) -> tuple:
+    def make_turn(self, board: numpy.ndarray):
         def get_digit():
             choice = input("Please choose a cell to mark [1-9] : ")
             while not choice.isdigit() or int(choice) < 1 or int(choice) > 9:
@@ -46,6 +47,8 @@ class Player:
             return int(choice)
         
         flat_board = board.ravel()
+        if self.human == False:
+            return self.make_turn_ai(flat_board)
         while True:
             c = get_digit() - 1
             if flat_board[c] == 0:
@@ -53,9 +56,14 @@ class Player:
             else:
                 print("This cell is unavailable.")
 
-    def return_mark(self):
-        return self.mark
-        
+    def make_turn_ai(self, board):
+        possible_cells = []
+        for pos, mark in enumerate(board):
+            if mark == 0:
+                possible_cells.append(pos)
+        choice = random.choice(possible_cells)
+        print(f"Computer marks a cell.")
+        return (choice, self.return_mark())
 
 
 class Game:
