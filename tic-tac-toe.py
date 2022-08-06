@@ -61,29 +61,44 @@ class Player:
 class Game:
     def __init__(self) -> None:
         print("\n\nHello! This is Tic-Tac-Toe game. First, choose who controls players.")
-        self.board = numpy.zeros((3, 3), dtype='b')
-        self.player_one = None
-        self.player_two = None
-        # print(self.board)
+        self.board = numpy.zeros((3, 3), dtype='O')
+        self.player1 = None
+        self.player2 = None
+        self.player1_score = 0
+        self.player2_score = 0
         self.add_players()
         self.game_cycle()
 
     def add_players(self):
         print("\nPlayer one:")
-        self.player_one = Player("X")
+        self.player1 = Player("X")
         print("\nPlayer two:")
-        self.player_two = Player("O")
+        self.player2 = Player("O")
 
     def draw_board(self):
         print("\n")
-        print(f" {' ' if self.board[0, 0] == '0' else self.board[0, 0]} | {' ' if self.board[0, 1] == '0' else self.board[0, 1]} | {' ' if self.board[0, 2] == '0' else self.board[0, 2]} ")
+        print(f" {' ' if self.board[0, 0] == 0 else self.board[0, 0]} | {' ' if self.board[0, 1] == 0 else self.board[0, 1]} | {' ' if self.board[0, 2] == 0 else self.board[0, 2]} ")
         print(f"---|---|---")
-        print(f" {' ' if self.board[1, 0] == '0' else self.board[1, 0]} | {' ' if self.board[1, 1] == '0' else self.board[1, 1]} | {' ' if self.board[1, 2] == '0' else self.board[1, 2]} ")
+        print(f" {' ' if self.board[1, 0] == 0 else self.board[1, 0]} | {' ' if self.board[1, 1] == 0 else self.board[1, 1]} | {' ' if self.board[1, 2] == 0 else self.board[1, 2]} ")
         print(f"---|---|---")
-        print(f" {' ' if self.board[2, 0] == '0' else self.board[2, 0]} | {' ' if self.board[2, 1] == '0' else self.board[2, 1]} | {' ' if self.board[2, 2] == '0' else self.board[2, 2]} ")
-
+        print(f" {' ' if self.board[2, 0] == 0 else self.board[2, 0]} | {' ' if self.board[2, 1] == 0 else self.board[2, 1]} | {' ' if self.board[2, 2] == 0 else self.board[2, 2]} ")
+        
     def check_board(self):
-        pass
+        rows_cols_diags = self.board.tolist() + self.board.transpose().tolist() + [self.board.diagonal().tolist()] + [numpy.fliplr(self.board).diagonal().tolist()]
+        mark1 = self.player1.return_mark()
+        mark2 = self.player2.return_mark()
+
+        for line in rows_cols_diags:
+            if len(set(line)) == 1 and set(line).pop() != 0:
+                if set(line).pop() == mark1:
+                    return 1
+                elif set(line).pop() == mark2:
+                    return 2
+        
+        if 0 not in self.board.ravel().tolist():
+            return 0
+
+        return None
 
     def game_cycle(self):
         print("\nGame start!")
@@ -91,21 +106,47 @@ class Game:
         while True:
             while player_one_move is True:
                 self.draw_board()
-                print(f"Player {self.player_one.return_mark()}:")
-                cell, mark = self.player_one.make_turn(self.board)
-                self.board[cell] = mark
+                print(f"Player {self.player1.return_mark()}:")
+                cell, mark = self.player1.make_turn(self.board)
+                self.board[cell // 3, cell % 3] = mark
                 player_one_move = False
 
-            self.check_board()
+            if self.check_board() is not None:
+                return self.game_end(self.check_board())
 
             while player_one_move is False:
                 self.draw_board()
-                print(f"Player {self.player_two.return_mark()}:")
-                cell, mark = self.player_two.make_turn(self.board)
-                self.board[cell] = mark
+                print(f"Player {self.player2.return_mark()}:")
+                cell, mark = self.player2.make_turn(self.board)
+                self.board[cell // 3, cell % 3] = mark
                 player_one_move = True
 
-            self.check_board()
+            if self.check_board() is not None:
+                return self.game_end(self.check_board())
 
+    def game_end(self, result):
+        self.draw_board()
+
+        if result == 0:
+            print("It's a tie!")
+        elif result == 1:
+            print("Player 1 wins!")
+            self.player1_score += 1
+        elif result == 2:
+            print("Player 2 wins!")
+            self.player2_score += 1
+        else:
+            print("Something went wrong!")
+
+            
+        print(f"Score: Player 1 - {str(self.player1_score)} wins, Player 2 - {str(self.player2_score)} wins.\n")
+
+        if input("If you want to quit the game, type N : ").upper() == "N":
+            exit("\nGoodbye!\n")
+        else:
+            self.board = numpy.zeros((3, 3), dtype='O')
+            self.game_cycle()
+
+        
 if __name__ == "__main__":
     Game()
