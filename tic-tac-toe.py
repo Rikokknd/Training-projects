@@ -63,39 +63,120 @@ class Player:
     def make_master_turn(self, board: numpy.ndarray):
 
         def minmaxer(_board: numpy.ndarray, my_turn=True):
-            """Определяет, какая из доступных клеток самая выгодная. Должен вернуть оценку этой клетки и ее номер."""
+            """Определяет, какая из свободных клеток самая выгодная. Возвращает [оценка клетки, номер клетки]."""
+
+            def worsest_cell(list_of_worst_cells: list):
+                """Определяет наихудшую клетку из списка. Наихудшая - клетка, которая встречается чаще всего.
+                Если таких клеток больше 1, то худшая из них - нечетная (определено опытным путем)."""
+
+                score = list_of_worst_cells[0][0]
+
+                # убираем оценки, превращаем список в одномерный
+                clean_list = [cell[1] for cell in worst_cells]
+
+                cell, counts = numpy.unique(numpy.array(clean_list), return_counts=True)
+
+                most_occurent_worst_cells = []
+
+                # отбираем в список номера клеток, которые встречаются чаще всего
+                for i in range(len(counts)):
+                    if counts[i] == max(counts):
+                        most_occurent_worst_cells.append(cell[i])
+
+                if len(most_occurent_worst_cells) == 1:
+                    # если такая клетка всего одна
+                    return [score, most_occurent_worst_cells[0]]
+                else:
+                    # отбираем из списка нечетные клетки
+                    odd_cells = [num for num in most_occurent_worst_cells if num % 2 == 1]
+
+                    if odd_cells:
+                        # если такие есть, возвращаем первую попавшуюся нечетную
+                        return [score, odd_cells[0]]
+                    else:
+                        # иначе возвращаем первую попавшуюся
+                        return [score, most_occurent_worst_cells[0]]
+            
             possible_cells = []
-            for pos, fill in enumerate(_board.ravel().tolist()):
+            for pos, fill in enumerate(_board.ravel().tolist()): # собираем список свободных клеток
                 if fill == 0:
                     possible_cells.append([0, pos + 1]) # 0 - score, pos - cell position
+            if [0, 5] in possible_cells: # если центр свободен, ставим метку туда
+                return [0, 5]
+            if len(possible_cells) >= 8: # если на доске стоит только одна марка и она в центре - занимаем случайную нечетную ячейку 
+                return random.choice([cell for cell in possible_cells if cell[1] % 2 == 1])
 
+            # в результате работы этого цикла собирается информация, 
+            # за какое кол-во ходов игрок, совершающий ход, сможет закончить игру.
             for cell in range(len(possible_cells)):
+                # Создаем копию поля и пытаемся ставить нашу метку в разные доступные клетки
                 new_board = _board.copy()
                 new_board[(possible_cells[cell][1] - 1) // 3, (possible_cells[cell][1] - 1) % 3] = self.mark if my_turn == True else self.opponent
+
                 result = Game.check_board(new_board)
                 if result != 0 and result is not None:
+                    # если в результате последней установки марки в ячейку один из игроков побеждает
+                    # этой ячейке назначается оценка. Если это наш игрок то оценка положительная
+                    # если оппонент то отрицательная. Величина оценки исходит из того, сколько
+                    # свободных клеток остается на доске - чем больше свободных клеток, 
+                    # тем раньше завершилась игра, тем выше оценка
                     score = len(possible_cells) * (-1 if my_turn == False else 1)
                     possible_cells[cell][0] = score
                 elif result == 0:
+                    # Если в результате последней установки марки в ячейку игра завершается ничьей - оценка 0
                     possible_cells[cell][0] = 0
                 else:
-                    possible_cells[cell][0] = minmaxer(new_board, my_turn=(False if my_turn == True else True))[0]
+                    # наполняем possible_cells всеми вариантами завершения игры, позже отберем самые лучшие и худшие
+                    possible_cells.append(minmaxer(new_board, my_turn=(False if my_turn == True else True)))
 
+            
             best_cells = []
+            worst_cells = []
+            best_option = None
+
+            # отбираем лучшие и худшие варианты развития событий 
             for cell in possible_cells:
                 if cell[0] == max(possible_cells)[0]:
                     best_cells.append(cell)
-            best_option = random.choice(best_cells)
+                elif cell[0] == min(possible_cells)[0]:
+                    worst_cells.append(cell)
 
+            # Выбираем самый лучший вариант хода:
+
+            if not worst_cells: 
+                # если все варианты развития имеют одинаковую оценку - функция min() не возвращает значений, 
+                # поэтому этот лист может быть пустым. Возвращаем любой из них
+                best_option = random.choice(best_cells)
+
+            elif best_cells[0][0] < abs(worst_cells[0][0]):
+                # если оценка(а с ней и вероятность завершения игры) у противника выше чем у нас - 
+                # отбираем самый худший вариант развития событий и блокируем его
+                best_option = worsest_cell(worst_cells)
+
+            elif len(worst_cells) > len(best_cells):
+                # если плохих вариантов развития игры больше чем хороших - 
+                # отбираем самый худший вариант развития событий и блокируем его
+                best_option = worsest_cell(worst_cells)
+
+            else:
+                # в остальных случаях выбираем любой из наилучших вариантов
+                best_option = random.choice(best_cells)
+            
             return best_option
 
-        return (minmaxer(board)[1], self.return_mark())
+        master_turn = minmaxer(board)
+        return (master_turn[1]-1, self.return_mark())
 
 
 class Game:
     def __init__(self) -> None:
         print("\n\nHello! This is Tic-Tac-Toe game. First, choose who controls players.")
         self.board = numpy.zeros((3, 3), dtype='O')
+        # testing board
+        # self.board = numpy.array([[0, "O", "X"], ["X", "X", 0], ["O", "O", 0]], dtype='O')
+        # self.board = numpy.array([[0, "O", 0], ["O", "X", 0], ["X", "X", "O"]], dtype='O')
+        # self.board = numpy.array([[0, 0, 0], [0, "X", "O"], ["X", "O", 0]], dtype='O')
+        # self.board = numpy.array([[0, 0, 0], [0, "X", 0], ["O", 0, 0]], dtype='O')
         self.player1 = None
         self.player2 = None
         self.player1_score = 0
