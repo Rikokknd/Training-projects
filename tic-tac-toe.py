@@ -35,14 +35,14 @@ class Player:
         elif self.master:
             return self.make_master_turn(board)
 
-    def make_human_turn(self, board: numpy.ndarray):
+    def make_human_turn(self, _board: numpy.ndarray):
         def get_digit():
             choice = input("Please choose a cell to mark [1-9] : ")
             while not choice.isdigit() or int(choice) < 1 or int(choice) > 9:
                 choice = input("Please use digits [1-9] : ")
             return int(choice)
         
-        flat_board = board.ravel()
+        flat_board = _board.ravel()
         while True:
             c = get_digit() - 1
             if flat_board[c] == 0:
@@ -50,8 +50,8 @@ class Player:
             else:
                 print("This cell is unavailable.")
 
-    def make_random_turn(self, board: numpy.ndarray):
-        board = board.ravel()
+    def make_random_turn(self, _board: numpy.ndarray):
+        board = _board.ravel()
         possible_cells = []
         for pos, mark in enumerate(board):
             if mark == 0:
@@ -60,7 +60,7 @@ class Player:
         print(f"Computer '{self.mark}' marks a cell.")
         return (choice, self.return_mark())
 
-    def make_master_turn(self, board: numpy.ndarray):
+    def make_master_turn(self, __board: numpy.ndarray):
 
         def minmaxer(_board: numpy.ndarray, my_turn=True):
             """Определяет, какая из свободных клеток самая выгодная. Возвращает [оценка клетки, номер клетки]."""
@@ -164,7 +164,7 @@ class Player:
             
             return best_option
 
-        master_turn = minmaxer(board)
+        master_turn = minmaxer(__board)
         return (master_turn[1]-1, self.return_mark())
 
 
@@ -172,11 +172,6 @@ class Game:
     def __init__(self) -> None:
         print("\n\nHello! This is Tic-Tac-Toe game. First, choose who controls players.")
         self.board = numpy.zeros((3, 3), dtype='O')
-        # testing board
-        # self.board = numpy.array([[0, "O", "X"], ["X", "X", 0], ["O", "O", 0]], dtype='O')
-        # self.board = numpy.array([[0, "O", 0], ["O", "X", 0], ["X", "X", "O"]], dtype='O')
-        # self.board = numpy.array([[0, 0, 0], [0, "X", "O"], ["X", "O", 0]], dtype='O')
-        # self.board = numpy.array([[0, 0, 0], [0, "X", 0], ["O", 0, 0]], dtype='O')
         self.player1 = None
         self.player2 = None
         self.player1_score = 0
@@ -191,21 +186,31 @@ class Game:
         self.player2 = Player("O")
 
     def draw_board(self):
+        
+        def drw(content):
+            return ' ' if content == 0 else content
+
+        brd = self.board
+
         print("\n")
-        print(f" {' ' if self.board[0, 0] == 0 else self.board[0, 0]} | {' ' if self.board[0, 1] == 0 else self.board[0, 1]} | {' ' if self.board[0, 2] == 0 else self.board[0, 2]} ")
+        print(f" {drw(brd[0, 0])} | {drw(brd[0, 1])} | {drw(brd[0, 2])} ")
         print(f"---|---|---")
-        print(f" {' ' if self.board[1, 0] == 0 else self.board[1, 0]} | {' ' if self.board[1, 1] == 0 else self.board[1, 1]} | {' ' if self.board[1, 2] == 0 else self.board[1, 2]} ")
+        print(f" {drw(brd[1, 0])} | {drw(brd[1, 1])} | {drw(brd[1, 2])} ")
         print(f"---|---|---")
-        print(f" {' ' if self.board[2, 0] == 0 else self.board[2, 0]} | {' ' if self.board[2, 1] == 0 else self.board[2, 1]} | {' ' if self.board[2, 2] == 0 else self.board[2, 2]} ")
+        print(f" {drw(brd[2, 0])} | {drw(brd[2, 1])} | {drw(brd[2, 2])} ")
         
     def check_board(board):
+        """Возвращает марку победителя если находит 3 одинаковых марки на линии. Возвращает 0 при ничьей. None если игра продолжается."""
+        # собираем в список все отрезки, которые нужно проверить - ряды, столбцы, диагонали
         rows_cols_diags = board.tolist() + board.transpose().tolist() + [board.diagonal().tolist()] + [numpy.fliplr(board).diagonal().tolist()]
 
         for line in rows_cols_diags:
             if len(set(line)) == 1 and set(line).pop() != 0:
+                # если в линии все марки одинаковые и это не пустые места - конец игры, возвращаем марку победителя
                 return set(line).pop()
         
         if 0 not in board.ravel().tolist():
+            # если на поле не осталось свободных ячеек - это ничья
             return 0
 
         return None
@@ -239,12 +244,15 @@ class Game:
 
         if result == 0:
             print("It's a tie!")
+
         elif result == self.player1.return_mark():
             print("Player 1 wins!")
             self.player1_score += 1
+
         elif result == self.player2.return_mark():
             print("Player 2 wins!")
             self.player2_score += 1
+            
         else:
             print("Something went wrong!")
 
